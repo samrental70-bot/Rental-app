@@ -51,7 +51,7 @@ export default function ScheduleVisitForm({ roomId }) {
 
   if (submitted) {
     return (
-      <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm leading-relaxed text-emerald-800">
         Thanks! Your visit request has been sent. The manager will contact you
         by email or phone to confirm a time.
       </div>
@@ -59,8 +59,8 @@ export default function ScheduleVisitForm({ roomId }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="grid grid-cols-1 gap-x-4 gap-y-5 sm:grid-cols-2">
         <Field label="Full name">
           <input
             required
@@ -147,7 +147,7 @@ export default function ScheduleVisitForm({ roomId }) {
       <button
         type="submit"
         disabled={submitting}
-        className="w-full rounded-lg bg-slate-900 px-4 py-2.5 font-medium text-white transition hover:bg-slate-700 disabled:opacity-60 sm:w-auto"
+        className="w-full rounded-xl bg-slate-900 px-4 py-3 font-semibold text-white shadow-sm transition hover:bg-slate-700 hover:shadow disabled:opacity-60"
       >
         {submitting ? "Sending…" : "Request a visit"}
       </button>
@@ -158,7 +158,7 @@ export default function ScheduleVisitForm({ roomId }) {
 function Field({ label, children }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-medium text-slate-700">
+      <span className="mb-1.5 block text-sm font-medium text-slate-600">
         {label}
       </span>
       {children}
