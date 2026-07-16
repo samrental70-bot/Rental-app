@@ -51,9 +51,9 @@ export default function LocationForm({ userId, location, onSaved, onCancel }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+      className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7"
     >
-      <h2 className="font-semibold text-slate-900">
+      <h2 className="border-b border-slate-100 pb-4 text-lg font-semibold text-slate-900">
         {isEditing ? "Edit location" : "Add a location"}
       </h2>
 
@@ -85,18 +85,18 @@ export default function LocationForm({ userId, location, onSaved, onCancel }) {
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <div className="flex gap-3">
+      <div className="flex gap-3 border-t border-slate-100 pt-6">
         <button
           type="submit"
           disabled={saving}
-          className="rounded-lg bg-slate-900 px-4 py-2 font-medium text-white transition hover:bg-slate-700 disabled:opacity-60"
+          className="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700 disabled:opacity-60"
         >
           {saving ? "Saving…" : "Save location"}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-slate-50"
+          className="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
         >
           Cancel
         </button>
@@ -108,7 +108,7 @@ export default function LocationForm({ userId, location, onSaved, onCancel }) {
 function Field({ label, children }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-medium text-slate-700">
+      <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
         {label}
       </span>
       {children}

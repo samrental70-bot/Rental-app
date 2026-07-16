@@ -108,13 +108,13 @@ export default function RoomForm({ userId, locationId, room, onSaved, onCancel }
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+      className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7"
     >
-      <h2 className="font-semibold text-slate-900">
+      <h2 className="border-b border-slate-100 pb-4 text-lg font-semibold text-slate-900">
         {isEditing ? "Edit room" : "Add a room"}
       </h2>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
         <Field label="Title">
           <input
             required
@@ -201,18 +201,18 @@ export default function RoomForm({ userId, locationId, room, onSaved, onCancel }
 
       <Field label="Photos">
         {photos.length > 0 && (
-          <div className="mb-3 flex flex-wrap gap-2">
+          <div className="mb-3 flex flex-wrap gap-3">
             {photos.map((photo) => (
               <div key={photo.id} className="relative h-20 w-24">
                 <img
                   src={getPhotoUrl(photo.storage_path)}
                   alt=""
-                  className="h-full w-full rounded-md object-cover"
+                  className="h-full w-full rounded-lg object-cover shadow-sm"
                 />
                 <button
                   type="button"
                   onClick={() => handleRemovePhoto(photo)}
-                  className="absolute -right-2 -top-2 rounded-full bg-slate-900 px-1.5 py-0.5 text-xs text-white"
+                  className="absolute -right-2 -top-2 rounded-full bg-slate-900 px-1.5 py-0.5 text-xs text-white shadow-sm"
                   aria-label="Remove photo"
                 >
                   ×
@@ -226,24 +226,24 @@ export default function RoomForm({ userId, locationId, room, onSaved, onCancel }
           accept="image/*"
           multiple
           onChange={(e) => setNewFiles(Array.from(e.target.files || []))}
-          className="text-sm"
+          className="text-sm text-slate-600 file:mr-3 file:rounded-lg file:border file:border-slate-300 file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-50"
         />
       </Field>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <div className="flex gap-3">
+      <div className="flex gap-3 border-t border-slate-100 pt-6">
         <button
           type="submit"
           disabled={saving}
-          className="rounded-lg bg-slate-900 px-4 py-2 font-medium text-white transition hover:bg-slate-700 disabled:opacity-60"
+          className="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700 disabled:opacity-60"
         >
           {saving ? "Saving…" : "Save room"}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-slate-50"
+          className="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
         >
           Cancel
         </button>
@@ -280,7 +280,7 @@ async function uploadPhotos(userId, roomId, files, startingSortOrder) {
 function Field({ label, children }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-medium text-slate-700">
+      <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
         {label}
       </span>
       {children}
