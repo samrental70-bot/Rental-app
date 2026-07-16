@@ -86,11 +86,13 @@ export default function LocationsManager({ userId }) {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="font-semibold text-slate-900">Your locations</h2>
+        <h2 className="text-lg font-semibold tracking-tight text-slate-900">
+          Your locations
+        </h2>
         <button
           type="button"
           onClick={() => setEditingLocation(null)}
-          className="rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
+          className="rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-slate-700"
         >
           + Add location
         </button>
@@ -99,7 +101,7 @@ export default function LocationsManager({ userId }) {
       {loading && <p className="text-slate-500">Loading…</p>}
       {error && <p className="text-red-600">{error}</p>}
       {!loading && locations.length === 0 && (
-        <p className="text-slate-500">
+        <p className="rounded-xl border border-dashed border-slate-200 bg-white p-6 text-center text-slate-500">
           You haven&apos;t added any locations yet. Add one to start listing
           rooms.
         </p>
@@ -113,14 +115,14 @@ export default function LocationsManager({ userId }) {
           return (
             <div
               key={location.id}
-              className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:flex-row sm:items-center sm:justify-between sm:p-5"
             >
               <div>
-                <p className="font-medium text-slate-900">{location.name}</p>
+                <p className="font-semibold text-slate-900">{location.name}</p>
                 {location.address && (
                   <p className="text-sm text-slate-500">{location.address}</p>
                 )}
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1.5 inline-block rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
                   {total} room{total === 1 ? "" : "s"} · {vacant} vacant
                 </p>
               </div>
@@ -129,21 +131,21 @@ export default function LocationsManager({ userId }) {
                 <button
                   type="button"
                   onClick={() => setOpenLocation(location)}
-                  className="rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
+                  className="rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-slate-700"
                 >
                   Manage rooms
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditingLocation(location)}
-                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  className="rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-50"
                 >
                   Edit
                 </button>
                 <button
                   type="button"
                   onClick={() => deleteLocation(location)}
-                  className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
+                  className="rounded-xl border border-red-200 bg-white px-3.5 py-2 text-sm font-medium text-red-600 shadow-sm transition hover:bg-red-50"
                 >
                   Delete
                 </button>
