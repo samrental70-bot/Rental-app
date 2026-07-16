@@ -54,7 +54,7 @@ export default function LocationRooms() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-8 text-slate-500">
+      <div className="mx-auto max-w-6xl px-4 py-16 text-center text-slate-500">
         Loading…
       </div>
     );
@@ -64,7 +64,10 @@ export default function LocationRooms() {
     return (
       <div className="mx-auto max-w-6xl px-4 py-8">
         <p className="text-slate-700">This location is no longer available.</p>
-        <Link to="/" className="mt-4 inline-block text-slate-900 underline">
+        <Link
+          to="/"
+          className="mt-4 inline-block font-medium text-slate-900 underline underline-offset-2"
+        >
           Back to locations
         </Link>
       </div>
@@ -72,34 +75,48 @@ export default function LocationRooms() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <Link to="/" className="text-sm text-slate-500 hover:text-slate-800">
-        &larr; Back to locations
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:py-10">
+      <Link
+        to="/"
+        className="-ml-2 inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+      >
+        <span aria-hidden="true">&larr;</span>
+        Back to locations
       </Link>
 
-      <h1 className="mt-4 text-2xl font-bold text-slate-900">
-        {location.name}
-      </h1>
-      {location.address && (
-        <p className="mt-1 text-slate-500">{location.address}</p>
-      )}
-      {location.description && (
-        <p className="mt-2 whitespace-pre-line text-slate-700">
-          {location.description}
-        </p>
-      )}
-
-      {rooms.length === 0 && (
-        <p className="mt-8 text-slate-500">
-          No rooms are available at this location right now.
-        </p>
-      )}
-
-      <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {rooms.map((room) => (
-          <RoomCard key={room.id} room={room} />
-        ))}
+      <div className="mt-4 max-w-2xl">
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+          {location.name}
+        </h1>
+        {location.address && (
+          <p className="mt-2 text-slate-500">{location.address}</p>
+        )}
+        {location.description && (
+          <p className="mt-3 whitespace-pre-line leading-relaxed text-slate-600">
+            {location.description}
+          </p>
+        )}
       </div>
+
+      {rooms.length === 0 ? (
+        <div className="mt-8 rounded-xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center text-slate-500">
+          No rooms are available at this location right now.
+        </div>
+      ) : (
+        <>
+          <div className="mt-8 flex items-baseline justify-between border-b border-slate-200 pb-3">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+              {rooms.length} {rooms.length === 1 ? "room" : "rooms"} available
+            </h2>
+          </div>
+
+          <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {rooms.map((room) => (
+              <RoomCard key={room.id} room={room} />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
