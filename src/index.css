@@ -4,6 +4,13 @@
   @apply w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500;
 }
 
+/* Scoped modifier for the manager login card only — does not affect other
+   forms that use the shared .input class (ScheduleVisitForm, RoomForm,
+   LocationForm). */
+.input--login {
+  @apply py-2.5 focus:border-emerald-500 focus:ring-emerald-500;
+}
+
 body {
   font-family:
     system-ui,
