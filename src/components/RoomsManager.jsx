@@ -3,7 +3,7 @@ import { supabase } from "../lib/supabaseClient";
 import { getPhotoUrl, formatRent, formatDate } from "../lib/rooms";
 import RoomForm from "./RoomForm";
 
-export default function RoomsManager({ userId }) {
+export default function RoomsManager({ userId, locationId, locationName, onBack }) {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -17,6 +17,7 @@ export default function RoomsManager({ userId }) {
       .from("rooms")
       .select("*, room_photos(id, storage_path, sort_order)")
       .eq("manager_id", userId)
+      .eq("location_id", locationId)
       .order("created_at", { ascending: false })
       .then(({ data, error: fetchError }) => {
         if (!isMounted) return;
@@ -38,7 +39,7 @@ export default function RoomsManager({ userId }) {
     return () => {
       isMounted = false;
     };
-  }, [userId, reloadToken]);
+  }, [userId, locationId, reloadToken]);
 
   function reload() {
     setReloadToken((token) => token + 1);
@@ -76,6 +77,7 @@ export default function RoomsManager({ userId }) {
     return (
       <RoomForm
         userId={userId}
+        locationId={locationId}
         room={editingRoom}
         onSaved={() => {
           setEditingRoom(undefined);
@@ -88,8 +90,19 @@ export default function RoomsManager({ userId }) {
 
   return (
     <div>
+      {onBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          className="mb-4 text-sm text-slate-500 hover:text-slate-800"
+        >
+          &larr; Back to locations
+        </button>
+      )}
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="font-semibold text-slate-900">Your rooms</h2>
+        <h2 className="font-semibold text-slate-900">
+          Rooms {locationName ? `in ${locationName}` : ""}
+        </h2>
         <button
           type="button"
           onClick={() => setEditingRoom(null)}

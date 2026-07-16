@@ -19,7 +19,9 @@ export default function RoomDetail() {
       setLoading(true);
       const { data, error } = await supabase
         .from("rooms")
-        .select("*, room_photos(id, storage_path, sort_order)")
+        .select(
+          "*, room_photos(id, storage_path, sort_order), locations(id, name)"
+        )
         .eq("id", roomId)
         .eq("status", "empty")
         .maybeSingle();
@@ -54,11 +56,16 @@ export default function RoomDetail() {
           This room is no longer available.
         </p>
         <Link to="/" className="mt-4 inline-block text-slate-900 underline">
-          Back to available rooms
+          Back to locations
         </Link>
       </div>
     );
   }
+
+  const backHref = room.locations ? `/locations/${room.locations.id}` : "/";
+  const backLabel = room.locations
+    ? `Back to ${room.locations.name}`
+    : "Back to locations";
 
   const genderLabel = GENDER_PREFERENCES.find(
     (g) => g.value === room.gender_preference
@@ -66,8 +73,8 @@ export default function RoomDetail() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      <Link to="/" className="text-sm text-slate-500 hover:text-slate-800">
-        &larr; Back to available rooms
+      <Link to={backHref} className="text-sm text-slate-500 hover:text-slate-800">
+        &larr; {backLabel}
       </Link>
 
       <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">

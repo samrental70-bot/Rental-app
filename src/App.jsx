@@ -1,6 +1,7 @@
 import { Routes, Route, Link } from "react-router-dom";
 import { AuthProvider } from "./lib/AuthContext";
-import PublicListing from "./pages/PublicListing";
+import LocationsListing from "./pages/LocationsListing";
+import LocationRooms from "./pages/LocationRooms";
 import RoomDetail from "./pages/RoomDetail";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -13,7 +14,8 @@ export default function App() {
         <SiteHeader />
         <main className="flex-1">
           <Routes>
-            <Route path="/" element={<PublicListing />} />
+            <Route path="/" element={<LocationsListing />} />
+            <Route path="/locations/:locationId" element={<LocationRooms />} />
             <Route path="/rooms/:roomId" element={<RoomDetail />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route

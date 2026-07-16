@@ -1,17 +1,19 @@
 import { useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../lib/AuthContext";
-import RoomsManager from "../components/RoomsManager";
+import LocationsManager from "../components/LocationsManager";
+import VacantRoomsManager from "../components/VacantRoomsManager";
 import VisitRequestsManager from "../components/VisitRequestsManager";
 
 const TABS = [
-  { key: "rooms", label: "Rooms" },
+  { key: "vacant", label: "Vacant rooms" },
+  { key: "locations", label: "Locations" },
   { key: "requests", label: "Visit requests" },
 ];
 
 export default function AdminDashboard() {
   const { session } = useAuth();
-  const [tab, setTab] = useState("rooms");
+  const [tab, setTab] = useState("vacant");
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
@@ -46,9 +48,9 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {tab === "rooms" ? (
-        <RoomsManager userId={session.user.id} />
-      ) : (
+      {tab === "vacant" && <VacantRoomsManager userId={session.user.id} />}
+      {tab === "locations" && <LocationsManager userId={session.user.id} />}
+      {tab === "requests" && (
         <VisitRequestsManager userId={session.user.id} />
       )}
     </div>

@@ -6,3 +6,5 @@ dist-ssr
 .env.local
 .DS_Store
 npm-debug.log*
+.vercel
+supabase/.temp

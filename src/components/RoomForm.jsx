@@ -14,7 +14,7 @@ const blankForm = {
   status: "occupied",
 };
 
-export default function RoomForm({ userId, room, onSaved, onCancel }) {
+export default function RoomForm({ userId, locationId, room, onSaved, onCancel }) {
   const isEditing = Boolean(room);
   const [form, setForm] = useState(() =>
     room
@@ -70,7 +70,7 @@ export default function RoomForm({ userId, room, onSaved, onCancel }) {
     } else {
       const { data: inserted, error: insertError } = await supabase
         .from("rooms")
-        .insert({ ...payload, manager_id: userId })
+        .insert({ ...payload, manager_id: userId, location_id: locationId })
         .select()
         .single();
       if (insertError) {
