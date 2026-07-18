@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 
 function monthKey(date) {
@@ -12,14 +12,31 @@ function monthLabel(monthStr) {
   });
 }
 
+const UNIT_LEVELS = [
+  { value: "basement", label: "Basement" },
+  { value: "main_floor", label: "Main floor" },
+  { value: "upper_floor", label: "Upper floor" },
+];
+const UNIT_LEVEL_ORDER = [...UNIT_LEVELS.map((u) => u.value), "unspecified"];
+
+function unitLevelLabel(value) {
+  return UNIT_LEVELS.find((u) => u.value === value)?.label || "Other unit";
+}
+
 export default function TenantsManager({ userId }) {
   const [tenants, setTenants] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [payments, setPayments] = useState({}); // tenantId -> { monthStr: paymentRow }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [reloadToken, setReloadToken] = useState(0);
   const [addingTenant, setAddingTenant] = useState(false);
-  const [newTenant, setNewTenant] = useState({ name: "", monthly_rent: "" });
+  const [newTenant, setNewTenant] = useState({
+    name: "",
+    monthly_rent: "",
+    location_id: "",
+    unit_level: "",
+  });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -27,9 +44,23 @@ export default function TenantsManager({ userId }) {
 
     async function load() {
       setLoading(true);
+      const { data: locationRows, error: locationsError } = await supabase
+        .from("locations")
+        .select("id, name")
+        .eq("manager_id", userId)
+        .order("name");
+
+      if (!isMounted) return;
+      if (locationsError) {
+        setError(locationsError.message);
+        setLoading(false);
+        return;
+      }
+      setLocations(locationRows || []);
+
       const { data: tenantRows, error: tenantsError } = await supabase
         .from("tenants")
-        .select("*")
+        .select("*, locations(id, name)")
         .eq("manager_id", userId)
         .order("created_at", { ascending: true });
 
@@ -94,21 +125,63 @@ export default function TenantsManager({ userId }) {
     return result;
   }, [tenants]);
 
+  const groupedTenants = useMemo(() => {
+    const byLocation = new Map();
+    for (const tenant of tenants) {
+      const locKey = tenant.location_id || "unassigned";
+      const locName = tenant.locations?.name || "Unassigned property";
+      if (!byLocation.has(locKey)) {
+        byLocation.set(locKey, { name: locName, units: new Map() });
+      }
+      const group = byLocation.get(locKey);
+      const unitKey = tenant.unit_level || "unspecified";
+      if (!group.units.has(unitKey)) group.units.set(unitKey, []);
+      group.units.get(unitKey).push(tenant);
+    }
+
+    const locationEntries = Array.from(byLocation.entries()).sort((a, b) => {
+      if (a[0] === "unassigned") return 1;
+      if (b[0] === "unassigned") return -1;
+      return a[1].name.localeCompare(b[1].name);
+    });
+
+    return locationEntries.map(([locKey, group]) => ({
+      locKey,
+      name: group.name,
+      units: UNIT_LEVEL_ORDER.filter((u) => group.units.has(u)).map((u) => ({
+        key: u,
+        label: unitLevelLabel(u),
+        tenants: group.units.get(u),
+      })),
+    }));
+  }, [tenants]);
+
+  const totalColumns = 5 + months.length;
+
   async function addTenant(event) {
     event.preventDefault();
-    if (!newTenant.name.trim() || newTenant.monthly_rent === "") return;
+    if (
+      !newTenant.name.trim() ||
+      newTenant.monthly_rent === "" ||
+      !newTenant.location_id ||
+      !newTenant.unit_level
+    ) {
+      return;
+    }
     setSaving(true);
     const { error: insertError } = await supabase.from("tenants").insert({
       manager_id: userId,
       name: newTenant.name.trim(),
       monthly_rent: Number(newTenant.monthly_rent),
+      location_id: newTenant.location_id,
+      unit_level: newTenant.unit_level,
     });
     setSaving(false);
     if (insertError) {
       setError(insertError.message);
       return;
     }
-    setNewTenant({ name: "", monthly_rent: "" });
+    setNewTenant({ name: "", monthly_rent: "", location_id: "", unit_level: "" });
     setAddingTenant(false);
     reload();
   }
@@ -210,7 +283,14 @@ export default function TenantsManager({ userId }) {
         </button>
       </div>
 
-      {addingTenant && (
+      {addingTenant && locations.length === 0 && (
+        <p className="mb-6 rounded-xl border border-dashed border-slate-200 bg-white p-6 text-center text-slate-500">
+          Add a location first (Locations tab) before adding tenants — tenants
+          are grouped under their property.
+        </p>
+      )}
+
+      {addingTenant && locations.length > 0 && (
         <form
           onSubmit={addTenant}
           className="mb-6 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
@@ -228,6 +308,50 @@ export default function TenantsManager({ userId }) {
                 setNewTenant((f) => ({ ...f, name: e.target.value }))
               }
             />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Property
+            </span>
+            <select
+              required
+              className="input"
+              value={newTenant.location_id}
+              onChange={(e) =>
+                setNewTenant((f) => ({ ...f, location_id: e.target.value }))
+              }
+            >
+              <option value="" disabled>
+                Select…
+              </option>
+              {locations.map((loc) => (
+                <option key={loc.id} value={loc.id}>
+                  {loc.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Unit level
+            </span>
+            <select
+              required
+              className="input"
+              value={newTenant.unit_level}
+              onChange={(e) =>
+                setNewTenant((f) => ({ ...f, unit_level: e.target.value }))
+              }
+            >
+              <option value="" disabled>
+                Select…
+              </option>
+              {UNIT_LEVELS.map((u) => (
+                <option key={u.value} value={u.value}>
+                  {u.label}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="block">
             <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -290,132 +414,164 @@ export default function TenantsManager({ userId }) {
               </tr>
             </thead>
             <tbody>
-              {tenants.map((tenant) => (
-                <tr
-                  key={tenant.id}
-                  className="border-b border-slate-100 last:border-0"
-                >
-                  <td className="sticky left-0 z-10 whitespace-nowrap bg-white px-4 py-3 font-medium text-slate-900">
-                    {tenant.name}
-                  </td>
-                  <td className="px-4 py-3">
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      defaultValue={tenant.monthly_rent}
-                      key={`rent-${tenant.id}-${tenant.monthly_rent}`}
-                      className="input !w-28"
-                      onBlur={(e) => {
-                        if (e.target.value !== String(tenant.monthly_rent)) {
-                          updateTenantField(
-                            tenant,
-                            "monthly_rent",
-                            e.target.value
-                          );
-                        }
-                      }}
-                    />
-                  </td>
-                  <td className="px-4 py-3">
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      placeholder="—"
-                      defaultValue={tenant.last_month_rent_received ?? ""}
-                      key={`lmr-${tenant.id}-${tenant.last_month_rent_received ?? ""}`}
-                      className="input !w-28"
-                      onBlur={(e) => {
-                        if (
-                          e.target.value !==
-                          String(tenant.last_month_rent_received ?? "")
-                        ) {
-                          updateTenantField(
-                            tenant,
-                            "last_month_rent_received",
-                            e.target.value
-                          );
-                        }
-                      }}
-                    />
-                  </td>
-                  <td className="px-4 py-3">
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      placeholder="—"
-                      defaultValue={tenant.security_deposit_received ?? ""}
-                      key={`sec-${tenant.id}-${tenant.security_deposit_received ?? ""}`}
-                      className="input !w-28"
-                      onBlur={(e) => {
-                        if (
-                          e.target.value !==
-                          String(tenant.security_deposit_received ?? "")
-                        ) {
-                          updateTenantField(
-                            tenant,
-                            "security_deposit_received",
-                            e.target.value
-                          );
-                        }
-                      }}
-                    />
-                  </td>
-                  {months.map((m) => {
-                    if (m < tenant.start_month) {
-                      return (
-                        <td
-                          key={m}
-                          className="px-4 py-3 text-center text-slate-300"
-                        >
-                          &mdash;
-                        </td>
-                      );
-                    }
-                    const payment = payments[tenant.id]?.[m];
-                    return (
-                      <td key={m} className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={Boolean(payment?.received)}
-                            onChange={() => handleToggleReceived(tenant, m)}
-                            className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                            aria-label={`Rent received for ${monthLabel(m)}`}
-                          />
-                          <input
-                            type="number"
-                            min="0"
-                            step="1"
-                            placeholder="Amount"
-                            defaultValue={payment?.amount_received ?? ""}
-                            key={`${tenant.id}-${m}-${payment?.amount_received ?? ""}`}
-                            className="input !w-24"
-                            onBlur={(e) => {
-                              if (
-                                e.target.value !==
-                                String(payment?.amount_received ?? "")
-                              ) {
-                                handleAmountChange(tenant, m, e.target.value);
-                              }
-                            }}
-                          />
-                        </div>
-                      </td>
-                    );
-                  })}
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      type="button"
-                      onClick={() => deleteTenant(tenant)}
-                      className="rounded-xl border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 shadow-sm transition hover:bg-red-50"
+              {groupedTenants.map((locGroup) => (
+                <Fragment key={`loc-${locGroup.locKey}`}>
+                  <tr>
+                    <td
+                      colSpan={totalColumns}
+                      className="sticky left-0 z-10 border-b border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-900"
                     >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
+                      {locGroup.name}
+                    </td>
+                  </tr>
+                  {locGroup.units.map((unitGroup) => (
+                    <Fragment key={`unit-${locGroup.locKey}-${unitGroup.key}`}>
+                      <tr>
+                        <td
+                          colSpan={totalColumns}
+                          className="sticky left-0 z-10 border-b border-slate-100 bg-slate-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                        >
+                          {unitGroup.label}
+                        </td>
+                      </tr>
+                      {unitGroup.tenants.map((tenant) => (
+                        <tr
+                          key={tenant.id}
+                          className="border-b border-slate-100 last:border-0"
+                        >
+                          <td className="sticky left-0 z-10 whitespace-nowrap bg-white px-4 py-3 pl-8 font-medium text-slate-900">
+                            {tenant.name}
+                          </td>
+                          <td className="px-4 py-3">
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              defaultValue={tenant.monthly_rent}
+                              key={`rent-${tenant.id}-${tenant.monthly_rent}`}
+                              className="input !w-28"
+                              onBlur={(e) => {
+                                if (
+                                  e.target.value !== String(tenant.monthly_rent)
+                                ) {
+                                  updateTenantField(
+                                    tenant,
+                                    "monthly_rent",
+                                    e.target.value
+                                  );
+                                }
+                              }}
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              placeholder="—"
+                              defaultValue={tenant.last_month_rent_received ?? ""}
+                              key={`lmr-${tenant.id}-${tenant.last_month_rent_received ?? ""}`}
+                              className="input !w-28"
+                              onBlur={(e) => {
+                                if (
+                                  e.target.value !==
+                                  String(tenant.last_month_rent_received ?? "")
+                                ) {
+                                  updateTenantField(
+                                    tenant,
+                                    "last_month_rent_received",
+                                    e.target.value
+                                  );
+                                }
+                              }}
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              placeholder="—"
+                              defaultValue={tenant.security_deposit_received ?? ""}
+                              key={`sec-${tenant.id}-${tenant.security_deposit_received ?? ""}`}
+                              className="input !w-28"
+                              onBlur={(e) => {
+                                if (
+                                  e.target.value !==
+                                  String(tenant.security_deposit_received ?? "")
+                                ) {
+                                  updateTenantField(
+                                    tenant,
+                                    "security_deposit_received",
+                                    e.target.value
+                                  );
+                                }
+                              }}
+                            />
+                          </td>
+                          {months.map((m) => {
+                            if (m < tenant.start_month) {
+                              return (
+                                <td
+                                  key={m}
+                                  className="px-4 py-3 text-center text-slate-300"
+                                >
+                                  &mdash;
+                                </td>
+                              );
+                            }
+                            const payment = payments[tenant.id]?.[m];
+                            return (
+                              <td key={m} className="px-4 py-3">
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={Boolean(payment?.received)}
+                                    onChange={() =>
+                                      handleToggleReceived(tenant, m)
+                                    }
+                                    className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                    aria-label={`Rent received for ${monthLabel(m)}`}
+                                  />
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    placeholder="Amount"
+                                    defaultValue={payment?.amount_received ?? ""}
+                                    key={`${tenant.id}-${m}-${payment?.amount_received ?? ""}`}
+                                    className="input !w-24"
+                                    onBlur={(e) => {
+                                      if (
+                                        e.target.value !==
+                                        String(payment?.amount_received ?? "")
+                                      ) {
+                                        handleAmountChange(
+                                          tenant,
+                                          m,
+                                          e.target.value
+                                        );
+                                      }
+                                    }}
+                                  />
+                                </div>
+                              </td>
+                            );
+                          })}
+                          <td className="px-4 py-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => deleteTenant(tenant)}
+                              className="rounded-xl border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 shadow-sm transition hover:bg-red-50"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </Fragment>
+                  ))}
+                </Fragment>
               ))}
             </tbody>
           </table>
