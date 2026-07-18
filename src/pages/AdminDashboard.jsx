@@ -4,10 +4,12 @@ import { useAuth } from "../lib/AuthContext";
 import LocationsManager from "../components/LocationsManager";
 import VacantRoomsManager from "../components/VacantRoomsManager";
 import VisitRequestsManager from "../components/VisitRequestsManager";
+import TenantsManager from "../components/TenantsManager";
 
 const TABS = [
   { key: "vacant", label: "Vacant rooms" },
   { key: "locations", label: "Locations" },
+  { key: "tenants", label: "Tenant rents" },
   { key: "requests", label: "Visit requests" },
 ];
 
@@ -52,6 +54,7 @@ export default function AdminDashboard() {
 
       {tab === "vacant" && <VacantRoomsManager userId={session.user.id} />}
       {tab === "locations" && <LocationsManager userId={session.user.id} />}
+      {tab === "tenants" && <TenantsManager userId={session.user.id} />}
       {tab === "requests" && (
         <VisitRequestsManager userId={session.user.id} />
       )}
