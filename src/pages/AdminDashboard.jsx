@@ -5,11 +5,13 @@ import LocationsManager from "../components/LocationsManager";
 import VacantRoomsManager from "../components/VacantRoomsManager";
 import VisitRequestsManager from "../components/VisitRequestsManager";
 import TenantsManager from "../components/TenantsManager";
+import CleaningDutyManager from "../components/CleaningDutyManager";
 
 const TABS = [
   { key: "vacant", label: "Vacant rooms" },
   { key: "locations", label: "Locations" },
   { key: "tenants", label: "Tenant rents" },
+  { key: "cleaning", label: "Cleaning duty" },
   { key: "requests", label: "Visit requests" },
 ];
 
@@ -55,6 +57,7 @@ export default function AdminDashboard() {
       {tab === "vacant" && <VacantRoomsManager userId={session.user.id} />}
       {tab === "locations" && <LocationsManager userId={session.user.id} />}
       {tab === "tenants" && <TenantsManager userId={session.user.id} />}
+      {tab === "cleaning" && <CleaningDutyManager userId={session.user.id} />}
       {tab === "requests" && (
         <VisitRequestsManager userId={session.user.id} />
       )}
