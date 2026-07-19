@@ -61,6 +61,7 @@ export default function CleaningDutyManager({ userId }) {
   const [tenants, setTenants] = useState([]);
   const [activeTurns, setActiveTurns] = useState({}); // location_id -> turn
   const [photos, setPhotos] = useState({}); // turn_id -> [{path, url}]
+  const [managerWhatsapp, setManagerWhatsapp] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [reloadToken, setReloadToken] = useState(0);
@@ -75,7 +76,7 @@ export default function CleaningDutyManager({ userId }) {
 
     async function load() {
       setLoading(true);
-      const [locRes, tenantRes] = await Promise.all([
+      const [locRes, tenantRes, settingsRes] = await Promise.all([
         supabase
           .from("locations")
           .select("id, name, cleaning_cycle_days, cleaning_start_date")
@@ -88,6 +89,11 @@ export default function CleaningDutyManager({ userId }) {
           )
           .eq("manager_id", userId)
           .order("created_at", { ascending: true }),
+        supabase
+          .from("manager_settings")
+          .select("whatsapp_number")
+          .eq("manager_id", userId)
+          .maybeSingle(),
       ]);
 
       if (!isMounted) return;
@@ -149,6 +155,7 @@ export default function CleaningDutyManager({ userId }) {
       setTenants(tenantRes.data || []);
       setActiveTurns(turnsByLocation);
       setPhotos(photoMap);
+      setManagerWhatsapp(settingsRes.data?.whatsapp_number || "");
       setLoading(false);
     }
 
@@ -244,6 +251,19 @@ export default function CleaningDutyManager({ userId }) {
     reload();
   }
 
+  async function saveManagerWhatsapp(rawValue) {
+    const value = rawValue.trim() || null;
+    const { error: upsertError } = await supabase
+      .from("manager_settings")
+      .upsert(
+        { manager_id: userId, whatsapp_number: value },
+        { onConflict: "manager_id" }
+      );
+    if (upsertError) {
+      setError(upsertError.message);
+    }
+  }
+
   async function updateWhatsapp(tenant, rawValue) {
     const value = rawValue.trim() || null;
     const { error: updateError } = await supabase
@@ -277,6 +297,25 @@ export default function CleaningDutyManager({ userId }) {
       <h2 className="mb-4 text-lg font-semibold tracking-tight text-slate-900">
         Cleaning duty
       </h2>
+
+      <label className="mb-6 block max-w-xs">
+        <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Your WhatsApp number (for no-response alerts)
+        </span>
+        <input
+          type="tel"
+          placeholder="+1…"
+          defaultValue={managerWhatsapp}
+          key={`manager-wa-${managerWhatsapp}`}
+          className="input"
+          onBlur={(e) => {
+            if (e.target.value !== managerWhatsapp) {
+              saveManagerWhatsapp(e.target.value);
+              setManagerWhatsapp(e.target.value.trim());
+            }
+          }}
+        />
+      </label>
 
       {loading && <p className="text-slate-500">Loading…</p>}
       {error && <p className="mb-4 text-red-600">{error}</p>}
