@@ -1,25 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "../lib/supabaseClient";
-
-function todayStr() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function formatMoney(value) {
-  return Number(value).toLocaleString("en-CA", {
-    style: "currency",
-    currency: "CAD",
-  });
-}
-
-function dateLabel(dateStr) {
-  return new Date(`${dateStr}T00:00:00`).toLocaleDateString("en-CA", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
+import { supabase } from "../../lib/supabaseClient";
+import { dateLabel, formatMoney, itemLabel, todayStr } from "./papaUtils";
 
 const EMPTY_ENTRY = {
   entry_date: todayStr(),
@@ -28,9 +9,10 @@ const EMPTY_ENTRY = {
   direction: "in",
   amount: "",
   notes: "",
+  item_id: "",
 };
 
-export default function PapaAccountsManager({ userId }) {
+export default function PapaLedger({ ownerId, items }) {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -47,7 +29,7 @@ export default function PapaAccountsManager({ userId }) {
       const { data, error: loadError } = await supabase
         .from("papa_account_entries")
         .select("*")
-        .eq("manager_id", userId)
+        .eq("manager_id", ownerId)
         .order("entry_date", { ascending: true })
         .order("created_at", { ascending: true });
 
@@ -64,7 +46,7 @@ export default function PapaAccountsManager({ userId }) {
     return () => {
       isMounted = false;
     };
-  }, [userId, reloadToken]);
+  }, [ownerId, reloadToken]);
 
   function reload() {
     setReloadToken((t) => t + 1);
@@ -80,6 +62,11 @@ export default function PapaAccountsManager({ userId }) {
     }
     return withBalance.reverse();
   }, [entries]);
+
+  const itemsById = useMemo(
+    () => Object.fromEntries(items.map((i) => [i.id, i])),
+    [items]
+  );
 
   const totals = useMemo(() => {
     let moneyIn = 0;
@@ -98,13 +85,14 @@ export default function PapaAccountsManager({ userId }) {
     const { error: insertError } = await supabase
       .from("papa_account_entries")
       .insert({
-        manager_id: userId,
+        manager_id: ownerId,
         entry_date: newEntry.entry_date,
         description: newEntry.description.trim(),
         category: newEntry.category.trim() || null,
         direction: newEntry.direction,
         amount: Number(newEntry.amount),
         notes: newEntry.notes.trim() || null,
+        item_id: newEntry.item_id || null,
       });
     setSaving(false);
     if (insertError) {
@@ -139,10 +127,7 @@ export default function PapaAccountsManager({ userId }) {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold tracking-tight text-slate-900">
-          18 Papa Accounts
-        </h2>
+      <div className="mb-4 flex items-center justify-end">
         <button
           type="button"
           onClick={() => setAdding((v) => !v)}
@@ -263,6 +248,25 @@ export default function PapaAccountsManager({ userId }) {
           </label>
           <label className="block">
             <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Holding
+            </span>
+            <select
+              className="input"
+              value={newEntry.item_id}
+              onChange={(e) =>
+                setNewEntry((f) => ({ ...f, item_id: e.target.value }))
+              }
+            >
+              <option value="">None</option>
+              {items.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {itemLabel(item)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
               Notes
             </span>
             <input
@@ -295,7 +299,7 @@ export default function PapaAccountsManager({ userId }) {
       {error && <p className="text-red-600">{error}</p>}
       {!loading && entries.length === 0 && (
         <p className="rounded-xl border border-dashed border-slate-200 bg-white p-6 text-center text-slate-500">
-          No entries yet. Add one to start tracking Papa's accounts.
+          No money in/out entries yet.
         </p>
       )}
 
@@ -325,6 +329,11 @@ export default function PapaAccountsManager({ userId }) {
                   </td>
                   <td className="px-4 py-3 font-medium text-slate-900">
                     {entry.description}
+                    {itemsById[entry.item_id] && (
+                      <span className="block text-xs font-normal text-slate-500">
+                        {itemLabel(itemsById[entry.item_id])}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-slate-600">
                     {entry.category || "—"}

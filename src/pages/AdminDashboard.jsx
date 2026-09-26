@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../lib/AuthContext";
 import LocationsManager from "../components/LocationsManager";
@@ -6,7 +6,7 @@ import VacantRoomsManager from "../components/VacantRoomsManager";
 import VisitRequestsManager from "../components/VisitRequestsManager";
 import TenantsManager from "../components/TenantsManager";
 import CleaningDutyManager from "../components/CleaningDutyManager";
-import PapaAccountsManager from "../components/PapaAccountsManager";
+import PapaAccountsManager from "../components/papa/PapaAccountsManager";
 
 const TABS = [
   { key: "vacant", label: "Vacant rooms" },
@@ -20,6 +20,35 @@ const TABS = [
 export default function AdminDashboard() {
   const { session } = useAuth();
   const [tab, setTab] = useState("vacant");
+  // Set when this login is a "18 Papa Accounts" team member of another
+  // manager's workspace — they only see that tab.
+  const [papaOwnerId, setPapaOwnerId] = useState(null);
+
+  const userId = session.user.id;
+  const userEmail = session.user.email;
+
+  useEffect(() => {
+    let isMounted = true;
+    supabase
+      .from("papa_members")
+      .select("manager_id, email")
+      .neq("manager_id", userId)
+      .then(({ data }) => {
+        if (!isMounted) return;
+        const membership = (data || []).find(
+          (m) => m.email && m.email.toLowerCase() === userEmail?.toLowerCase()
+        );
+        if (membership) {
+          setPapaOwnerId(membership.manager_id);
+          setTab("papa");
+        }
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [userId, userEmail]);
+
+  const visibleTabs = papaOwnerId ? TABS.filter((t) => t.key === "papa") : TABS;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
@@ -40,7 +69,7 @@ export default function AdminDashboard() {
       </div>
 
       <div className="mb-6 flex gap-6 overflow-x-auto border-b border-slate-200">
-        {TABS.map((t) => (
+        {visibleTabs.map((t) => (
           <button
             key={t.key}
             type="button"
@@ -60,7 +89,13 @@ export default function AdminDashboard() {
       {tab === "locations" && <LocationsManager userId={session.user.id} />}
       {tab === "tenants" && <TenantsManager userId={session.user.id} />}
       {tab === "cleaning" && <CleaningDutyManager userId={session.user.id} />}
-      {tab === "papa" && <PapaAccountsManager userId={session.user.id} />}
+      {tab === "papa" && (
+        <PapaAccountsManager
+          ownerId={papaOwnerId || userId}
+          isOwner={!papaOwnerId}
+          userEmail={userEmail}
+        />
+      )}
       {tab === "requests" && (
         <VisitRequestsManager userId={session.user.id} />
       )}
