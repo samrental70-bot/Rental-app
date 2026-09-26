@@ -6,6 +6,7 @@ import VacantRoomsManager from "../components/VacantRoomsManager";
 import VisitRequestsManager from "../components/VisitRequestsManager";
 import TenantsManager from "../components/TenantsManager";
 import CleaningDutyManager from "../components/CleaningDutyManager";
+import PapaAccountsManager from "../components/PapaAccountsManager";
 
 const TABS = [
   { key: "vacant", label: "Vacant rooms" },
@@ -13,6 +14,7 @@ const TABS = [
   { key: "tenants", label: "Tenant rents" },
   { key: "cleaning", label: "Cleaning duty" },
   { key: "requests", label: "Visit requests" },
+  { key: "papa", label: "18 Papa Accounts" },
 ];
 
 export default function AdminDashboard() {
@@ -37,13 +39,13 @@ export default function AdminDashboard() {
         </button>
       </div>
 
-      <div className="mb-6 flex gap-6 border-b border-slate-200">
+      <div className="mb-6 flex gap-6 overflow-x-auto border-b border-slate-200">
         {TABS.map((t) => (
           <button
             key={t.key}
             type="button"
             onClick={() => setTab(t.key)}
-            className={`-mb-px border-b-2 px-1 pb-3 text-sm font-medium transition-colors ${
+            className={`-mb-px whitespace-nowrap border-b-2 px-1 pb-3 text-sm font-medium transition-colors ${
               tab === t.key
                 ? "border-slate-900 text-slate-900"
                 : "border-transparent text-slate-500 hover:text-slate-800"
@@ -58,6 +60,7 @@ export default function AdminDashboard() {
       {tab === "locations" && <LocationsManager userId={session.user.id} />}
       {tab === "tenants" && <TenantsManager userId={session.user.id} />}
       {tab === "cleaning" && <CleaningDutyManager userId={session.user.id} />}
+      {tab === "papa" && <PapaAccountsManager userId={session.user.id} />}
       {tab === "requests" && (
         <VisitRequestsManager userId={session.user.id} />
       )}
